@@ -197,8 +197,8 @@ def check_queue():
 # Initialize Tkinter and ttkbootstrap
 style = Style(theme="litera")
 root = style.master
-root.title("File Scraper by Gengsu")
-root.geometry("800x600")
+root.title("FileScraper by Gengsu07")
+root.geometry("1024x800")
 
 if getattr(sys, "frozen", False):
     # The application is frozen
