@@ -12,9 +12,11 @@ from matplotlib.ticker import MaxNLocator
 from ttkbootstrap import Style
 
 from excluded_files import excluded_files
+from included_files import included_ext
 
 data_queue = queue.Queue()
 
+INCLUDED_EXTENSIONS = included_ext
 EXCLUDED_EXTENSIONS = excluded_files
 EXCLUDED_STARTSWITH = {
     ".dll",
@@ -69,20 +71,25 @@ def list_files(directory):
         for file in files:
             # Exclude Windows files
             _, extension = os.path.splitext(file)
-            if (
-                not extension
-                or any(extension.startswith(ext) for ext in EXCLUDED_STARTSWITH)
-                or extension in EXCLUDED_EXTENSIONS
-            ):
-                continue  # Skip this file
+            # if (
+            #     not extension
+            #     or any(extension.startswith(ext) for ext in EXCLUDED_STARTSWITH)
+            #     or extension in EXCLUDED_EXTENSIONS
+            # ):
+            #     continue  # Skip this file
 
-            filepath = os.path.join(root, file)
-            size = os.path.getsize(filepath)
-            formatted_size = format_size(size)
-            name, extension = os.path.splitext(file)
-            table.insert(
-                "", tk.END, values=(name, extension, formatted_size, size, filepath)
-            )
+            if (
+                extension in INCLUDED_EXTENSIONS
+                and extension not in EXCLUDED_EXTENSIONS
+                and "RECYCLE.BIN" not in os.path.join(root, file)
+            ):
+                filepath = os.path.join(root, file)
+                size = os.path.getsize(filepath)
+                formatted_size = format_size(size)
+                name, extension = os.path.splitext(file)
+                table.insert(
+                    "", tk.END, values=(name, extension, formatted_size, size, filepath)
+                )
 
 
 def format_size(size):
@@ -220,19 +227,36 @@ tab_control.add(tab1, text="Files")
 tab_control.add(tab2, text="Charts")
 tab_control.pack(expand=1, fill="both")
 
-
 # Contents for Tab 1
 select_button = tk.Button(tab1, text="Select Directory", command=select_directory)
-select_button.pack(pady=10)
+select_button.pack(pady=5, side="top", anchor="center")
 export_button = tk.Button(tab1, text="Export to CSV", command=export_to_csv)
-export_button.pack(pady=10)
+export_button.pack(pady=5, side="top", anchor="center")
 columns = ("Name", "Extension", "Formated Size", "Size", "Full Path")
+
+# Progress bar for file listing
+file_progress = ttk.Progressbar(tab1, orient="horizontal", mode="indeterminate")
+file_progress.pack(fill="x", padx=10, pady=5)
+
 table = ttk.Treeview(tab1, columns=columns, show="headings")
 
+# Configure table headers
 for col in columns:
     table.heading(col, text=col)
     table.column(col, anchor="center")
+
+# Set header background color
 table.pack(expand=True, fill="both", padx=10, pady=10)
+style = ttk.Style()
+style.configure("Treeview.Heading", background="#f0f0f0")
+
+
+# Add vertical scrollbar
+scrollbar = ttk.Scrollbar(tab1, orient="vertical", command=table.yview)
+scrollbar.place(relx=1, rely=0, relheight=1, anchor="ne")
+# scrollbar.pack(side="right", fill="y")
+table.configure(yscrollcommand=scrollbar.set)
+
 
 # Contents for Tab 2
 chart_frame = ttk.Frame(tab2)
@@ -244,10 +268,6 @@ show_charts_button = tk.Button(
 )
 show_charts_button.pack(pady=10)
 
-
-# Progress bar for file listing
-file_progress = ttk.Progressbar(tab1, orient="horizontal", mode="indeterminate")
-file_progress.pack(fill="x", padx=10, pady=5)
 
 # Progress bar for chart creation
 chart_progress = ttk.Progressbar(tab2, orient="horizontal", mode="indeterminate")
